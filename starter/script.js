@@ -5,10 +5,10 @@
 
 
 class Workout {
-
   constructor(coords, distance, duration) {
     this.date = new Date();
     this.id = (Date.now() + '').slice(-10);
+    this.clicks = 0;
     this.coords = coords;
     this.distance = distance; // km
     this.duration = duration; // mins
@@ -17,6 +17,10 @@ class Workout {
   _setDescription() {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${months[this.date.getMonth()]} ${this.date.getDate()}`
+  }
+
+  click() {
+    this.clicks += 1;
   }
 }
 
@@ -69,6 +73,7 @@ const inputElevation = document.querySelector('.form__input--elevation');
 
 class App {
   #map;
+  #mapZoomLevel = 13;
   #mapEvent;
   #workouts = [];
 
@@ -76,7 +81,7 @@ class App {
     this._getPosition();
     form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationField);
-    containerWorkouts.addEventListener('click', this._moveToPopup);
+    containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
   }
 
   _getPosition() {
@@ -93,7 +98,7 @@ class App {
 
     const coords =[latitude, longitude];
 
-    this.#map = L.map('map').setView(coords, 13);
+    this.#map = L.map('map').setView(coords, this.#mapZoomLevel);
 
     L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution:
@@ -210,7 +215,7 @@ class App {
       </div>
       <div class="workout__details">
         <span class="workout__icon">🦶</span>
-        <span class="workout__value">${workout.pace}</span>
+        <span class="workout__value">${workout.pace.toFixed(1)}</span>
         <span class="workout__unit">spm</span>
       </div>
     </li>
@@ -233,6 +238,28 @@ class App {
 
       form.insertAdjacentHTML('afterend', html);
   }
+
+  _moveToPopup(e) {
+    const workoutEl = e.target.closest('.workout');
+    console.log(workoutEl);
+
+    if (!workoutEl) return;
+
+    const workout = this.#workouts.find(
+      work => work.id === workoutEl.dataset.id);
+    console.log(workout)
+
+    this.#map.setView(workout.coords, this.#mapZoomLevel, {
+      animate: true,
+      pan: {
+        duration: 1
+      },
+    });
+
+    workout.click();
+  }
 }
+
+
 
 const app = new App();
